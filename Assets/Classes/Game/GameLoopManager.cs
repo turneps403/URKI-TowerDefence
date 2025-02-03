@@ -4,15 +4,16 @@ using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine.Jobs;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameLoopManager : MonoBehaviour
 {
     public static Vector3[] NodePositions;
 
-    private static Queue<ApplyEffectData> EffectsQueue;
-    private static Queue<EnemyDamageData> DamageData;
-    private static Queue<Enemy> EnemiesToRemove;
-    private static Queue<int> EnemyIDsToSummon;
+    public static Queue<ApplyEffectData> EffectsQueue;
+    public static Queue<EnemyDamageData> DamageData;
+    public static Queue<Enemy> EnemiesToRemove;
+    public static Queue<int> EnemyIDsToSummon;
 
     public static float[] NodeDistances;
     public static List<TowerBehaviour> TowersInGame; // was NodeBehaviour
@@ -21,6 +22,14 @@ public class GameLoopManager : MonoBehaviour
 
     public Transform NodeParent;
     public bool LoopShouldEnd;
+
+    public static void ClearAllQueues()
+    {
+        EnemiesToRemove.Clear();
+        DamageData.Clear();
+        EnemyIDsToSummon.Clear();
+        EffectsQueue.Clear();
+    }
 
     void Start()
     {
@@ -47,21 +56,21 @@ public class GameLoopManager : MonoBehaviour
 
         StartCoroutine(GameLoop());
 
-        InvokeRepeating("SummonTest", 0f, 1f);
-        // InvokeRepeating("RemoveTest", 0f, 0.5f);
+        // Задержка перед началом создания врагов
+        Invoke("StartSummoning", 4f);
     }
 
-    // void RemoveTest()
-    // {
-    //     if (EntitySummoner.EnemiesInGame.Count > 0)
-    //     {
-    //         EntitySummoner.RemoveEnemy( EntitySummoner.EnemiesInGame[Random.Range(0, EntitySummoner.EnemiesInGame.Count)] );
-    //     }
-    // }
+    void StartSummoning()
+    {
+        // Создание врагов в два раза реже (каждые 1 секунды)
+        InvokeRepeating("SummonTest", 0f, 0.5f);
+    }
 
     void SummonTest()
     {
-        EnqueueEnemyIDToSummon(1);
+        // Случайный выбор ID врага
+        int randomEnemyID = Random.Range(1, 4); // 1, 2, 3
+        EnqueueEnemyIDToSummon(randomEnemyID);
     }
 
     IEnumerator GameLoop() 
@@ -107,6 +116,10 @@ public class GameLoopManager : MonoBehaviour
                 if (EntitySummoner.EnemiesInGame[i].NodeIndex >= NodePositions.Length)
                 {
                     EnqueueEnemyToRemove(EntitySummoner.EnemiesInGame[i]);
+
+                    ClearAllQueues();
+                    
+                    SceneManager.LoadScene("defeat");
                 }
             }
 
